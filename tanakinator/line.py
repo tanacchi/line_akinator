@@ -14,6 +14,6 @@ def handle_message(event):
         items = [
             QuickReplyButton(action=MessageAction(label="Play now", text="Play now."))
         ]
-        reply_content = TextSendMessage(quick_reply=QuickReply(items=items))
+        reply_content = TextSendMessage(text="Ready?", quick_reply=QuickReply(items=items))
 
     line.reply_message(event.reply_token, reply_content)

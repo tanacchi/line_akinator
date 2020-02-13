@@ -10,13 +10,20 @@ from linebot import (
 )
 import os
 
-CHANNEL_ACCESS_TOKEN = os.environ['CHANNEL_ACCESS_TOKEN']
-CHANNEL_SECRET       = os.environ['CHANNEL_SECRET']
+LOCAL_MODE = os.environ.get('TANAKINATOR_LOCAL_MODE')
 
-line    = LineBotApi(CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(CHANNEL_SECRET)
+if not LOCAL_MODE:
+    CHANNEL_ACCESS_TOKEN = os.environ.get('CHANNEL_ACCESS_TOKEN')
+    CHANNEL_SECRET       = os.environ.get('CHANNEL_SECRET')
+
+    line    = LineBotApi(CHANNEL_ACCESS_TOKEN)
+    handler = WebhookHandler(CHANNEL_SECRET)
+else:
+    line    = None
+    handler = None
 
 
 # Including other scripts
-import tanakinator.line
+if not LOCAL_MODE:
+    import tanakinator.line
 import tanakinator.views

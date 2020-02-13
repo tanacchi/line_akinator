@@ -1,10 +1,7 @@
 from flask import render_template, request, abort
-from tanakinator import app, line, handler
+from tanakinator import app
+from tanakinator.line import handler
 
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
 
 @app.route('/')
 def root():
@@ -23,9 +20,3 @@ def line_webhook():
         abort(400)
 
     return 'OK'
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    line.reply_message(
-        event.reply_token,
-        TextSendMessage(text="Hello."))

@@ -18,4 +18,5 @@ handler = WebhookHandler(CHANNEL_SECRET)
 
 
 # Including other scripts
+import tanakinator.line
 import tanakinator.views

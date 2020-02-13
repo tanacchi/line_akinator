@@ -1,6 +1,5 @@
 from tanakinator import line, handler
 
-from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     QuickReply, QuickReplyButton, MessageAction

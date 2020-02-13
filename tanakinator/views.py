@@ -23,6 +23,9 @@ def root():
                 table[solution_id][question_id] = CROSS_CHAR
     return render_template('index.html', solutions=solutions, questions=questions, table=table)
 
+
+from linebot.exceptions import InvalidSignatureError
+
 @app.route('/line', methods=['POST'])
 def line_webhook():
     signature = request.headers['X-Line-Signature']

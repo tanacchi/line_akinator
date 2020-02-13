@@ -4,21 +4,17 @@
   <tbody>
     <tr>
       <th style="width: 50px;">&nbsp;</th>
-      <th style="width: 50px;">Q1</th>
-      <th style="width: 50px;">Q2</th>
-      <th style="width: 50px;">Q3</th>
+      {% for question_name in questions.values() %}
+        <th style="width: 50px;">{{question_name}}</th>
+      {% endfor  %}
     </tr>
-    <tr>
-      <td style="width: 50px;"><strong>Solution1</strong></td>
-      <td style="width: 50px;">○</td>
-      <td style="width: 50px;">○</td>
-      <td style="width: 50px;">×</td>
-    </tr>
-    <tr>
-      <td style="width: 50px;"><strong>Solution2</strong></td>
-      <td style="width: 50px;">○</td>
-      <td style="width: 50px;">×</td>
-      <td style="width: 50px;">○</td>
-    </tr>
+    {% for solution_id, features in table.items() %}
+      <tr>
+        <td style="width: 50px;"><strong>{{ solutions[solution_id] }}</strong></td>
+        {% for question_id, value in features.items() %}
+          <td style="width: 50px;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
   </tbody>
 </table>

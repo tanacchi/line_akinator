@@ -5,14 +5,14 @@
     <tr>
       <th style="width: 50px;">&nbsp;</th>
       {% for question_name in questions.values() %}
-        <th style="width: 50px;">{{question_name}}</th>
+        <th style="width: 50px;">{{ question_name }}</th>
       {% endfor  %}
     </tr>
     {% for solution_id, features in table.items() %}
       <tr>
         <td style="width: 50px;"><strong>{{ solutions[solution_id] }}</strong></td>
         {% for question_id, value in features.items() %}
-          <td style="width: 50px;">{{ value }}</td>
+          <td style="width: 50px;">{{ value | safe }}</td>
         {% endfor %}
       </tr>
     {% endfor %}

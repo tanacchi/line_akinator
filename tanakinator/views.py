@@ -1,7 +1,5 @@
 from flask import render_template, request, abort
-from tanakinator import app
-from tanakinator.line import handler
-
+from tanakinator import app, handler
 
 @app.route('/')
 def root():

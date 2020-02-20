@@ -1,4 +1,5 @@
-from tanakinator import line, handler
+from tanakinator import line, handler, db
+from tanakinator.models import LatestMessage
 
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
@@ -8,7 +9,18 @@ from linebot.models import (
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    if event.message.text == "Play now.":
+    message = event.message.text
+
+    user_id = event.source.user_id
+    latest = db.session.query(LatestMessage).filter_by(user_id=user_id).first()
+    if latest:
+        latest.message = message[:200]
+    else:
+        latest = LatestMessage(user_id, message)
+    db.session.add(latest)
+    db.session.commit()
+
+    if message == "Play now.":
         reply_content = TextSendMessage(text="Hello.")
     else:
         items = [

@@ -131,3 +131,6 @@ dmypy.json
 
 # Local database file
 *.db
+
+# Setup script for environment
+setup.sh

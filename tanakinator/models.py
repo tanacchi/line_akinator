@@ -29,7 +29,7 @@ class UserStatus(db.Model):
 
 class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_status_id = db.Column(db.Integer, db.ForeignKey('user_status.id'))
+    user_status_id = db.Column(db.Integer, db.ForeignKey('user_status.id'), unique=True)
     answers = db.relationship('Answer', lazy=True)
     latest_question = db.relationship('Question', secondary=progresses, uselist=False, lazy=True)
     candidates = db.relationship('Solution', secondary=candidates, lazy=True)
@@ -49,6 +49,10 @@ class Solution(db.Model):
 
 
 class Feature(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint('question_id', 'solution_id'),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
     solution_id = db.Column(db.Integer, db.ForeignKey('solution.id'))
@@ -57,7 +61,7 @@ class Feature(db.Model):
 
 class Answer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    progress_id = db.Column(db.Integer, db.ForeignKey('progress.id'))
+    progress_id = db.Column(db.Integer, db.ForeignKey('progress.id'), unique=True)
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
     value = db.Column(db.Float)
 

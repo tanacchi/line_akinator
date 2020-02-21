@@ -17,8 +17,12 @@ def handle_message(event):
     if message in [state.value for state in GameState]:
         current_status = get_game_status(user_id)
         next_status = GameState(message)
-        reply_content.append(current_status.value + " -> " + next_status.value)
+        reply_text = current_status.value + " -> " + next_status.value
+        reply_content.append(TextSendMessage(text=reply_text))
         user_status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
+        if not user_status:
+            user_status = UserStatus()
+            user_status.user_id = user_id
         user_status.status = next_status.value
         db.session.add(user_status)
         db.session.commit()

@@ -1,5 +1,8 @@
 import enum
 
+from tanakinator.models import UserStatus
+from tanakinator import db
+
 
 class GameState(enum.Enum):
     PENDING     = 'pending'
@@ -14,6 +17,10 @@ class GameState(enum.Enum):
     LABELING    = 'labeling'
     UPDATING    = 'updating'
 
+
+def get_game_status(user_id):
+    status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
+    return GameState(status.status) if status else GameState.PENDING
 
 def get_feature_table():
     result = {

@@ -1,5 +1,5 @@
 from tanakinator import line, handler, db
-from tanakinator.models import UserStatus, Question
+from tanakinator.models import UserStatus, Question, Progress
 from tanakinator.akinator import GameState, get_game_status
 
 from linebot.models import (
@@ -20,6 +20,7 @@ def handle_message(event):
             user_status = UserStatus()
             user_status.user_id = user_id
         question = Question.query.all()[0]
+        user_status.progress = Progress()
         user_status.progress.latest_question = question
         user_status.status = GameState.ASKING.value
         db.session.add(user_status)

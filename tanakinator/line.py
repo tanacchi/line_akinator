@@ -85,9 +85,11 @@ def handle_message(event):
     elif status == GameState.GUESSING:
         if message in ["はい", "いいえ"]:
             user_status.status = GameState.PENDING.value
+            reply_text = "やったー" if message == "はい" else "ええ〜"
+            db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
+            db.session.delete(user_status.progress)
             db.session.add(user_status)
             db.session.commit()
-            reply_text = "やったー" if message == "はい" else "ええ〜"
         else:
             reply_text = "Pardon?"
         reply_content.append(TextSendMessage(text=reply_text))

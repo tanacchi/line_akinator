@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# Local database file
+*.db
+
+# Setup script for environment
+setup.sh

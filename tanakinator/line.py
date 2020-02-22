@@ -42,18 +42,9 @@ def handle_message(event):
             user_status.progress = Progress()
             question = select_next_question(user_status.progress)
             save_status(user_status, GameState.ASKING, question)
-            items = [
-                QuickReplyButton(action=MessageAction(label="はい", text="はい")),
-                QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
-            ]
-            reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
-
+            reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
         else:
-            reply_text = "「はじめる」をタップ！"
-            items = [
-                QuickReplyButton(action=MessageAction(label="はじめる", text="はじめる")),
-            ]
-            reply_content.append(TextSendMessage(text=reply_text, quick_reply=QuickReply(items=items)))
+            reply_content.append(QuickMessageForm(text="「はじめる」をタップ！", items=["はじめる"]))
 
     elif status == GameState.ASKING:
         if message in ["はい", "いいえ"]:
@@ -61,23 +52,14 @@ def handle_message(event):
             if not can_guess(user_status.progress):
                 question = select_next_question(user_status.progress)
                 save_status(user_status, next_question=question)
-                items = [
-                    QuickReplyButton(action=MessageAction(label="はい", text="はい")),
-                    QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
-                ]
-                reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
+                reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
             else:
                 most_likely_solution = guess_solution(user_status.progress)
                 reply_text = "思い浮かべているのは\n\n" + most_likely_solution.name + "\n\nですか?"
-                items = [
-                    QuickReplyButton(action=MessageAction(label="はい", text="はい")),
-                    QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
-                ]
-                reply_content.append(TextSendMessage(text=reply_text, quick_reply=QuickReply(items=items)))
+                reply_content.append(QuickMessageForm(text=reply_text, items=["はい", "いいえ"]))
                 save_status(user_status, GameState.GUESSING)
         else:
-            reply_text = "Pardon?"
-            reply_content.append(TextSendMessage(text=reply_text))
+            reply_content.append(TextMessageForm(text="Pardon?"))
 
     elif status == GameState.GUESSING:
         if message in ["はい", "いいえ"]:
@@ -87,6 +69,7 @@ def handle_message(event):
             save_status(user_status, GameState.PENDING)
         else:
             reply_text = "Pardon?"
-        reply_content.append(TextSendMessage(text=reply_text))
+        reply_content.append(TextMessageForm(text=reply_text))
 
+    reply_content = convert_form_to_message(reply_content)
     line.reply_message(event.reply_token, reply_content)

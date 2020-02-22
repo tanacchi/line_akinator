@@ -1,5 +1,8 @@
 from tanakinator import line, handler, db
-from tanakinator.models import UserStatus, Question, Progress, Answer
+from tanakinator.models import (
+    UserStatus, Question, Progress,
+    Answer, Solution, Feature
+)
 from tanakinator.akinator import GameState, get_game_status
 
 from linebot.models import (
@@ -39,8 +42,11 @@ def handle_message(event):
             reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
 
         else:
-            reply_text = "Pardon?"
-            reply_content.append(TextSendMessage(text=reply_text))
+            reply_text = "「はじめる」をタップ！"
+            items = [
+                QuickReplyButton(action=MessageAction(label="はじめる", text="はじめる")),
+            ]
+            reply_content.append(TextSendMessage(text=reply_text, quick_reply=QuickReply(items=items)))
 
     elif status == GameState.ASKING:
         if message in ["はい", "いいえ"]:
@@ -57,10 +63,33 @@ def handle_message(event):
                 ]
                 reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
             else:
-                user_status.status = GameState.PENDING.value
-                reply_content.append(TextSendMessage(text="Fin"))
+                score_table = {s.id: 0.0 for s in Solution.query.all()}
+                for ans in user_status.progress.answers:
+                    q_features = db.session.query(Feature).filter_by(question_id=ans.question.id)
+                    for f in q_features:
+                        score_table[f.solution.id] += ans.value * f.value
+                most_likely_solution = Solution.query.get(max(score_table, key=score_table.get))
+                reply_text = "思い浮かべているのは\n\n" + most_likely_solution.name + "\n\nですか?"
+                items = [
+                    QuickReplyButton(action=MessageAction(label="はい", text="はい")),
+                    QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
+                ]
+                reply_content.append(TextSendMessage(text=reply_text, quick_reply=QuickReply(items=items)))
+                user_status.status = GameState.GUESSING.value
             db.session.add(user_status)
             db.session.commit()
+        else:
+            reply_text = "Pardon?"
+            reply_content.append(TextSendMessage(text=reply_text))
 
+    elif status == GameState.GUESSING:
+        if message in ["はい", "いいえ"]:
+            user_status.status = GameState.PENDING.value
+            db.session.add(user_status)
+            db.session.commit()
+            reply_text = "やったー" if message == "はい" else "ええ〜"
+        else:
+            reply_text = "Pardon?"
+        reply_content.append(TextSendMessage(text=reply_text))
 
     line.reply_message(event.reply_token, reply_content)

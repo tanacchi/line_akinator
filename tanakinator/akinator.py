@@ -1,24 +1,9 @@
-import enum
-
+from tanakinator.common import GameState
 from tanakinator.models import (
     UserStatus, Question, Answer,
     Solution, Feature
 )
 from tanakinator import db
-
-
-class GameState(enum.Enum):
-    PENDING     = 'pending'
-    ASKING      = 'asking'
-    GUESSING    = 'guessing'
-    RESUMING    = 'resuming'
-    BEGGING     = 'begging'
-    REGISTERING = 'registering'
-    CONFIRMING  = 'confirming'
-    TRAINING    = 'training'
-    FEATURING   = 'featuring'
-    LABELING    = 'labeling'
-    UPDATING    = 'updating'
 
 
 def get_game_status(user_id):
@@ -43,7 +28,7 @@ def save_status(user_status, new_status=None, next_question=None):
     if new_status:
         user_status.status = new_status.value
     if next_question:
-        user_status.latest_question = next_question
+        user_status.progress.latest_question = next_question
     db.session.add(user_status)
     db.session.commit()
 

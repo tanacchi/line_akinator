@@ -1,10 +1,11 @@
 from tanakinator import line, handler, db
+from tanakinator.common import GameState
 from tanakinator.models import (
     UserStatus, Question, Progress,
     Answer, Solution, Feature
 )
 from tanakinator.akinator import (
-    GameState, get_game_status, get_user_status,
+    get_game_status, get_user_status,
     select_next_question, save_status, can_guess,
     push_answer, guess_solution
 )

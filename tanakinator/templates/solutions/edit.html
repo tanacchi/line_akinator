@@ -1,0 +1,19 @@
+<h1>{{ solution.name }}</h1>
+
+{% for feature, question  in feature_table.items() %}
+  <p>
+    <h3>{{ question.message }}</h3>
+    {% if feature.value == 1.0 %}
+      <input type="radio" name="q_{{question.id}}" value="はい" checked> はい
+      <input type="radio" name="q_{{question.id}}" value="いいえ"> いいえ
+    {% elif feature.value == 0.0 %}
+      <input type="radio" name="q_{{question.id}}" value="はい"> はい
+      <input type="radio" name="q_{{question.id}}" value="いいえ"> いいえ
+    {% else %}
+      <input type="radio" name="q_{{question.id}}" value="はい"> はい
+      <input type="radio" name="q_{{question.id}}" value="いいえ" checked> いいえ
+    {% endif %}
+  </p>
+{% endfor %}
+
+<a href="{{ url_for('root') }}">戻る</a>

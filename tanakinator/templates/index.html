@@ -10,7 +10,11 @@
     </tr>
     {% for solution_id, features in table.items() %}
       <tr>
-        <td style="width: 100px;"><strong>{{ solutions[solution_id] }}</strong></td>
+        <td style="width: 100px;">
+          <a href="{{ url_for('solution_edit', solution_id=solution_id) }}" >
+            <strong>{{ solutions[solution_id] }}</strong>
+          </a>
+        </td>
         {% for question_id, value in features.items() %}
           <td style="width: 100px;">{{ value | safe }}</td>
         {% endfor %}

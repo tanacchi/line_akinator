@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
     UserStatus, Question, Answer,
@@ -48,12 +50,11 @@ def guess_solution(progress):
     return Solution.query.get(max(score_table, key=score_table.get))
 
 def get_feature_table():
-    result = {
-        "S1": {"Q1": 1.0, "Q2": 0.0, "Q3": 1.0},
-        "S2": {"Q1": 1.0, "Q2": 1.0, "Q3": 0.0},
-        "S3": {"Q1": 0.0, "Q2": 1.0, "Q3": 0.0},
-        "S4": {"Q1": 1.0, "Q2": 0.0, "Q3": 0.0},
-    }
+    features = Feature.query.all()
+    result = defaultdict(dict)
+    for f in features:
+        s_id, q_id = f.solution_id, f.question_id
+        result[s_id][q_id] = f.value
     return result
 
 def handle_pending(user_status, message):

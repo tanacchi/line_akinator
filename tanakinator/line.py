@@ -1,5 +1,5 @@
 from tanakinator import line, handler, db
-from tanakinator.common import GameState
+from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
     UserStatus, Question, Progress,
     Answer, Solution, Feature
@@ -14,6 +14,18 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     QuickReply, QuickReplyButton, MessageAction
 )
+
+
+def convert_form_to_message(form_list):
+    reply_content = []
+    for form in form_list:
+        if isinstance(form, TextMessageForm):
+            message = TextSendMessage(text=form.text)
+        elif isinstance(form, QuickMessageForm):
+            items = [QuickReplyButton(action=MessageAction(label=item, text=item)) for item in form.items]
+            message = TextSendMessage(text=form.text, quick_reply=QuickReply(items=items))
+        reply_content.append(message)
+    return reply_content
 
 
 @handler.add(MessageEvent, message=TextMessage)

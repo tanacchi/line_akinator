@@ -1,5 +1,5 @@
 from tanakinator import line, handler, db
-from tanakinator.models import UserStatus
+from tanakinator.models import UserStatus, Question
 from tanakinator.akinator import GameState, get_game_status
 
 from linebot.models import (
@@ -12,26 +12,26 @@ from linebot.models import (
 def handle_message(event):
     message = event.message.text
     user_id = event.source.user_id
-
     reply_content = []
-    if message in [state.value for state in GameState]:
-        current_status = get_game_status(user_id)
-        next_status = GameState(message)
-        reply_text = current_status.value + " -> " + next_status.value
-        reply_content.append(TextSendMessage(text=reply_text))
+
+    if message == "はじめる":
         user_status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
         if not user_status:
             user_status = UserStatus()
             user_status.user_id = user_id
-        user_status.status = next_status.value
+        question = Question.query.all()[0]
+        user_status.progress.latest_question = question
+        user_status.status = GameState.ASKING.value
         db.session.add(user_status)
         db.session.commit()
+        items = [
+            QuickReplyButton(action=MessageAction(label="はい", text="はい")),
+            QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
+        ]
+        reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
 
-    items = [
-        QuickReplyButton(action=MessageAction(label="PENDING", text="pending")),
-        QuickReplyButton(action=MessageAction(label="ASKING", text="asking")),
-        QuickReplyButton(action=MessageAction(label="GUESSING", text="guessing"))
-    ]
-    reply_content.append(TextSendMessage(text="Choose next game-status.", quick_reply=QuickReply(items=items)))
+    else:
+        reply_text = "Pardon?"
+        reply_content.append(TextSendMessage(text=reply_text))
 
     line.reply_message(event.reply_token, reply_content)

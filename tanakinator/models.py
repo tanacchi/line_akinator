@@ -10,16 +10,6 @@ candidates = db.Table('candidates',
     db.Column('solution_id', db.Integer, db.ForeignKey('solution.id'), primary_key=True),
 )
 
-class LatestMessage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(80), nullable=False, unique=True)
-    message = db.Column(db.String(200), nullable=False)
-
-    def __init__(self, user_id, message):
-        self.user_id = user_id
-        self.message = message
-
-
 class UserStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(80), nullable=False, unique=True)

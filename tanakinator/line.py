@@ -29,6 +29,12 @@ def convert_form_to_message(form_list):
     return reply_content
 
 
+akinator_handler_table = {
+    GameState.PENDING:     handle_pending,
+    GameState.ASKING:      handle_asking,
+    GameState.GUESSING:    handle_guessing
+}
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     message = event.message.text
@@ -36,13 +42,8 @@ def handle_message(event):
 
     user_status = get_user_status(user_id)
     status = GameState(user_status.status)
+    akinator_handler = akinator_handler_table.get(status)
 
-    if status == GameState.PENDING:
-        reply_content = handle_pending(user_status, message)
-    elif status == GameState.ASKING:
-        reply_content = handle_asking(user_status, message)
-    elif status == GameState.GUESSING:
-        reply_content = handle_guessing(user_status, message)
-
+    reply_content = akinator_handler(user_status, message)
     reply_content = convert_form_to_message(reply_content)
     line.reply_message(event.reply_token, reply_content)

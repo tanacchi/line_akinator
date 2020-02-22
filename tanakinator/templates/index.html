@@ -1,18 +1,18 @@
 <h1>Welcome to tanakinator</h1>
 <hr />
-<table style="height: 135px; text-align: center; margin-left: auto; margin-right: auto;" border="1" width="250">
+<table style="height: 135px; text-align: center; margin-left: auto; margin-right: auto;" border="1" width="750">
   <tbody>
     <tr>
-      <th style="width: 50px;">&nbsp;</th>
+      <th style="width: 100px;">&nbsp;</th>
       {% for question_name in questions.values() %}
-        <th style="width: 50px;">{{ question_name }}</th>
+        <th style="width: 100px;">{{ question_name }}</th>
       {% endfor  %}
     </tr>
     {% for solution_id, features in table.items() %}
       <tr>
-        <td style="width: 50px;"><strong>{{ solutions[solution_id] }}</strong></td>
+        <td style="width: 100px;"><strong>{{ solutions[solution_id] }}</strong></td>
         {% for question_id, value in features.items() %}
-          <td style="width: 50px;">{{ value | safe }}</td>
+          <td style="width: 100px;">{{ value | safe }}</td>
         {% endfor %}
       </tr>
     {% endfor %}

@@ -1,5 +1,5 @@
 from tanakinator import line, handler, db
-from tanakinator.models import UserStatus, Question, Progress
+from tanakinator.models import UserStatus, Question, Progress, Answer
 from tanakinator.akinator import GameState, get_game_status
 
 from linebot.models import (
@@ -14,25 +14,53 @@ def handle_message(event):
     user_id = event.source.user_id
     reply_content = []
 
-    if message == "はじめる":
-        user_status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
-        if not user_status:
-            user_status = UserStatus()
-            user_status.user_id = user_id
-        question = Question.query.all()[0]
-        user_status.progress = Progress()
-        user_status.progress.latest_question = question
-        user_status.status = GameState.ASKING.value
+    user_status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
+    if not user_status:
+        user_status = UserStatus()
+        user_status.user_id = user_id
+        user_status.status = 'pending'
         db.session.add(user_status)
         db.session.commit()
-        items = [
-            QuickReplyButton(action=MessageAction(label="はい", text="はい")),
-            QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
-        ]
-        reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
+    status = GameState(user_status.status)
 
-    else:
-        reply_text = "Pardon?"
-        reply_content.append(TextSendMessage(text=reply_text))
+    if status == GameState.PENDING:
+        if message == "はじめる":
+            question = Question.query.all()[0]
+            if not user_status.progress:
+                user_status.progress = Progress()
+            user_status.progress.latest_question = question
+            user_status.status = GameState.ASKING.value
+            db.session.add(user_status)
+            db.session.commit()
+            items = [
+                QuickReplyButton(action=MessageAction(label="はい", text="はい")),
+                QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
+            ]
+            reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
+
+        else:
+            reply_text = "Pardon?"
+            reply_content.append(TextSendMessage(text=reply_text))
+
+    elif status == GameState.ASKING:
+        if message in ["はい", "いいえ"]:
+            answer = Answer()
+            answer.question = user_status.progress.latest_question
+            answer.value = 1.0 if message == "はい" else -1.0
+            user_status.progress.answers.append(answer)
+            if len(user_status.progress.answers) < len(Question.query.all()):
+                question = Question.query.all()[len(user_status.progress.answers)]
+                user_status.progress.latest_question = question
+                items = [
+                    QuickReplyButton(action=MessageAction(label="はい", text="はい")),
+                    QuickReplyButton(action=MessageAction(label="いいえ", text="いいえ")),
+                ]
+                reply_content.append(TextSendMessage(text=question.message, quick_reply=QuickReply(items=items)))
+            else:
+                user_status.status = GameState.PENDING.value
+                reply_content.append(TextSendMessage(text="Fin"))
+            db.session.add(user_status)
+            db.session.commit()
+
 
     line.reply_message(event.reply_token, reply_content)

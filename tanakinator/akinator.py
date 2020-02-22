@@ -1,14 +1,10 @@
-from tanakinator.common import GameState
+from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
     UserStatus, Question, Answer,
-    Solution, Feature
+    Solution, Feature, Progress
 )
 from tanakinator import db
 
-
-def get_game_status(user_id):
-    status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
-    return GameState(status.status) if status else GameState.PENDING
 
 def get_user_status(user_id):
     user_status = db.session.query(UserStatus).filter_by(user_id=user_id).first()
@@ -60,31 +56,43 @@ def get_feature_table():
     }
     return result
 
+def handle_pending(user_status, message):
+    reply_content = []
+    if message == "はじめる":
+        user_status.progress = Progress()
+        question = select_next_question(user_status.progress)
+        save_status(user_status, GameState.ASKING, question)
+        reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
+    else:
+        reply_content.append(QuickMessageForm(text="「はじめる」をタップ！", items=["はじめる"]))
+    return reply_content
 
-def test():
-    answers = []
-    all_questions = Question.query.all()
-    print(all_questions)
+def handle_asking(user_status, message):
+    reply_content = []
+    if message in ["はい", "いいえ"]:
+        push_answer(user_status.progress, message)
+        if not can_guess(user_status.progress):
+            question = select_next_question(user_status.progress)
+            save_status(user_status, next_question=question)
+            reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
+        else:
+            most_likely_solution = guess_solution(user_status.progress)
+            reply_text = "思い浮かべているのは\n\n" + most_likely_solution.name + "\n\nですか?"
+            save_status(user_status, GameState.GUESSING)
+            reply_content.append(QuickMessageForm(text=reply_text, items=["はい", "いいえ"]))
+    else:
+        reply_content.append(TextMessageForm(text="Pardon?"))
+    return reply_content
 
-    while len(answers) < len(all_questions):
-        q = all_questions[len(answers)]
-        ans_msg = input(q.message + "[y/n]")
-        if not ans_msg in ['y', 'n']:
-            raise RuntimeError("Invalid answer.")
-        answer = Answer()
-        answer.question = q
-        answer.value = 1.0 if ans_msg == 'y' else -1.0
-        answers.append(answer)
-        db.session.add(answer)
-        db.session.commit()
-        print(answers)
+def handle_guessing(user_status, message):
+    reply_content = []
+    if message in ["はい", "いいえ"]:
+        reply_text = "やったー" if message == "はい" else "ええ〜"
+        db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
+        db.session.delete(user_status.progress)
+        save_status(user_status, GameState.PENDING)
+    else:
+        reply_text = "Pardon?"
+    reply_content.append(TextMessageForm(text=reply_text))
+    return reply_content
 
-        score_table = {s.id: 0.0 for s in Solution.query.all()}
-        for ans in answers:
-            q_features = db.session.query(Feature).filter_by(question_id=ans.question.id)
-            for f in q_features:
-                score_table[f.solution.id] += ans.value * f.value
-        print(score_table)
-
-    most_likely_solution = Solution.query.get(max(score_table, key=score_table.get))
-    print(most_likely_solution.name)

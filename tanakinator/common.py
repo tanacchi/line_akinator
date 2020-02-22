@@ -15,7 +15,7 @@ class GameState(enum.Enum):
     UPDATING    = 'updating'
 
 class TextMessageForm(object):
-    def __init__(self, text, items=None):
+    def __init__(self, text):
         self.text = text
 
 class QuickMessageForm(object):

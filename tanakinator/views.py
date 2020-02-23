@@ -40,6 +40,7 @@ def solution_create():
         new_solution.name = request.form.get("name")
         for attr, value in request.form.items():
             if attr == 'name':
+                if value == "": return redirect(url_for('solution_create'))
                 new_solution.name = value
             else:
                 q_id = int(attr[2:])
@@ -83,7 +84,9 @@ def question_create():
         return render_template('questions/create.html')
     else:
         new_question = Question()
-        new_question.message = request.form.get("message")
+        message = request.form.get("message")
+        if message == "": return redirect(url_for('question_create'))
+        new_question.message = message
         db.session.add(new_question)
         db.session.commit()
         return redirect(url_for('root'))

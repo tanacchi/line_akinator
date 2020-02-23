@@ -102,6 +102,26 @@ def question_edit(question_id):
         db.session.commit()
         return redirect(url_for('root'))
 
+@app.route('/features/edit', methods=['GET', 'POST'])
+def feature_edit():
+    if request.method == 'GET':
+        s_id, q_id = request.args.get('s_id'), request.args.get('q_id')
+        solution = Solution.query.get(s_id)
+        question = Question.query.get(q_id)
+        feature = Feature.query.filter_by(solution_id=s_id, question_id=q_id).first() or Feature()
+        return render_template('features/edit.html', solution=solution, question=question, feature=feature)
+    else:
+        s_id, q_id = request.form.get('solution_id'), request.form.get('question_id')
+        feature = Feature.query.filter_by(solution_id=s_id, question_id=q_id).first()
+        if not feature:
+            feature = Feature()
+            feature.solution_id = s_id
+            feature.question_id = q_id
+        feature.value = str_value_table[request.form.get('value')]
+        db.session.add(feature)
+        db.session.commit()
+        return redirect(url_for('root'))
+
 
 from linebot.exceptions import InvalidSignatureError
 

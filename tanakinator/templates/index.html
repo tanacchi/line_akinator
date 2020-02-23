@@ -16,7 +16,9 @@
           </a>
         </td>
         {% for question_id, value in features.items() %}
-          <td style="width: 100px;">{{ value | safe }}</td>
+        <td style="width: 100px;">
+          <a href="{{ url_for('feature_edit')}}?s_id={{solution_id}}&q_id={{question_id}}">{{ value | safe }}</a>
+        </td>
         {% endfor %}
       </tr>
     {% endfor %}

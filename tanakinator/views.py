@@ -55,12 +55,24 @@ def solution_create():
 def solution_edit(solution_id):
     solution = Solution.query.get(solution_id)
     if request.method == 'GET':
-        feature_table = {f: Question.query.get(f.question_id) for f in solution.features}
-        kwargs = {'solution': solution, 'feature_table': feature_table}
+        known_feature_table = {f: Question.query.get(f.question_id) for f in solution.features}
+        unknown_questions = set(Question.query.all()) - {q for q in known_feature_table.values()}
+        kwargs = {
+            'solution': solution,
+            'known_feature_table': known_feature_table,
+            'unknown_questions': unknown_questions
+        }
         return render_template('solutions/edit.html', **kwargs)
     else:
-        for f in solution.features:
-            f.value = str_value_table[request.form.get(f"q_{f.question_id}")]
+        for label, value in request.form.items():
+            q_id = int(label[2:])
+            feature = Feature.query.filter_by(question_id=q_id, solution_id=solution.id).first()
+            if not feature:
+                feature = Feature()
+                feature.question_id = q_id
+                feature.solution_id = solution.id
+            feature.value = str_value_table[value]
+            solution.features.append(feature)
         db.session.add(solution)
         db.session.commit()
         return redirect(url_for('root'))

@@ -74,6 +74,17 @@ def question_create():
         db.session.commit()
         return redirect(url_for('root'))
 
+@app.route('/questions/<int:question_id>/edit', methods=['GET', 'POST'])
+def question_edit(question_id):
+    question = Question.query.get(question_id)
+    if request.method == 'GET':
+        return render_template('questions/edit.html', question=question)
+    else:
+        question.message = request.form.get("message")
+        db.session.add(question)
+        db.session.commit()
+        return redirect(url_for('root'))
+
 
 from linebot.exceptions import InvalidSignatureError
 

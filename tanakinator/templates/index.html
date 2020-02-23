@@ -4,9 +4,9 @@
   <tbody>
     <tr>
       <th style="width: 100px;">&nbsp;</th>
-      {% for question_name in questions.values() %}
-        <th style="width: 100px;">{{ question_name }}</th>
-      {% endfor  %}
+      {% for q_id, q_msg in questions.items() %}
+      <th style="width: 100px;"><a href="{{ url_for('question_edit', question_id=q_id) }}">{{ q_msg }}</th>
+      {% endfor %}
     </tr>
     {% for solution_id, features in table.items() %}
       <tr>

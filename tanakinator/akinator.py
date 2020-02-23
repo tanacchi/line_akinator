@@ -49,14 +49,6 @@ def guess_solution(progress):
             score_table[f.solution.id] += ans.value * f.value
     return Solution.query.get(max(score_table, key=score_table.get))
 
-def get_feature_table():
-    features = Feature.query.all()
-    result = defaultdict(dict)
-    for f in features:
-        s_id, q_id = f.solution_id, f.question_id
-        result[s_id][q_id] = f.value
-    return result
-
 def handle_pending(user_status, message):
     reply_content = []
     if message == "はじめる":

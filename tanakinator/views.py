@@ -6,7 +6,7 @@ from flask import (
 )
 from tanakinator import app, handler, db
 from tanakinator.models import Solution, Question, Feature
-from tanakinator.akinator import get_feature_table
+
 
 CIRCLE_CHAR = '&#9675;'
 CROSS_CHAR  = '&#10005;'
@@ -19,7 +19,6 @@ str_value_table = {
 
 @app.route('/')
 def root():
-    feature_table = get_feature_table()
     solutions = {s.id: s.name    for s in Solution.query.all()}
     questions = {q.id: q.message for q in Question.query.all()}
     table = {s_id: {q_id: '-' for q_id in questions} for s_id in solutions}

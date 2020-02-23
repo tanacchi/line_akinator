@@ -1,5 +1,6 @@
 <h1>{{ solution.name }}</h1>
 
+<form action="" method="post">
 {% for feature, question  in feature_table.items() %}
   <p>
     <h3>{{ question.message }}</h3>
@@ -15,5 +16,6 @@
     {% endif %}
   </p>
 {% endfor %}
-
+  <input type="submit" value="更新">
+</form>
 <a href="{{ url_for('root') }}">戻る</a>

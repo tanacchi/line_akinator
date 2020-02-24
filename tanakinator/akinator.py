@@ -78,6 +78,20 @@ def guess_solution(progress):
     print("[guess_solution] s_score_table: ", s_score_table)
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
+def update_features(progress):
+    solution = guess_solution(progress)
+    qid_feature_table = {f.question_id: f for f in solution.features}
+    for ans in progress.answers:
+        if ans.question_id in qid_feature_table:
+            feature = qid_feature_table[ans.question_id]
+        else:
+            feature = Feature()
+            feature.question_id = ans.question_id
+            feature.solution_id = solution.id
+        feature.value = ans.value
+        db.session.add(feature)
+        db.session.commit()
+
 def handle_pending(user_status, message):
     reply_content = []
     if message == "はじめる":
@@ -114,6 +128,7 @@ def handle_guessing(user_status, message):
     reply_content = []
     if message == "はい":
         reply_content.append(TextMessageForm(text="やったー"))
+        update_features(user_status.progress)
         reset_status(user_status)
     elif message == "いいえ":
         reply_content.append(TextMessageForm(text="ええ〜"))

@@ -27,7 +27,7 @@ def select_next_question(progress):
     for s in progress.candidates:
         for q_id in q_score_table:
             feature = Feature.query.filter_by(question_id=q_id, solution_id=s.id).first()
-            q_score_table[q_id] += feature.value
+            q_score_table[q_id] += feature.value if feature else 0.0
     q_score_table = {key: abs(value) for key, value in q_score_table.items()}
     print("[select_next_question] q_score_table: ", q_score_table)
     next_q_id = min(q_score_table, key=q_score_table.get)
@@ -52,7 +52,7 @@ def update_candidates(progress):
     s_score_table = {s.id: 0.0 for s in progress.candidates}
     for s_id in s_score_table:
         feature = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
-        s_score_table[s_id] = latest_answer.value * feature.value
+        s_score_table[s_id] = latest_answer.value * (feature.value if feature else 0.0)
     print("[update_candidates] s_score_table: ", s_score_table)
     new_candidates = [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
     return new_candidates
@@ -74,8 +74,7 @@ def guess_solution(progress):
     for s_id in s_score_table:
         for ans in progress.answers:
             feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
-            if not feature: continue
-            s_score_table[s_id] += ans.value * feature.value
+            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
     print("[guess_solution] s_score_table: ", s_score_table)
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 

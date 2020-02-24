@@ -19,8 +19,18 @@ def get_user_status(user_id):
     return user_status
 
 def select_next_question(progress):
-    all_questions = Question.query.all()
-    return all_questions[len(progress.answers)]
+    related_question_set = set()
+    for s in progress.candidates:
+        q_set = {f.question_id for f in s.features}
+        related_question_set.update(q_set)
+    q_score_table = {q_id: 0.0 for q_id in list(related_question_set)}
+    for s in progress.candidates:
+        for q_id in q_score_table:
+            feature = Feature.query.filter_by(question_id=q_id, solution_id=s.id).first()
+            q_score_table[q_id] += feature.value
+    q_score_table = {key: abs(value) for key, value in q_score_table.items()}
+    next_q_id = min(q_score_table, key=q_score_table.get)
+    return Question.query.get(next_q_id)
 
 def save_status(user_status, new_status=None, next_question=None):
     if new_status:
@@ -31,12 +41,12 @@ def save_status(user_status, new_status=None, next_question=None):
     db.session.commit()
 
 def update_candidates(progress):
-    score_table = {s.id: 0.0 for s in progress.candidates}
+    s_score_table = {s.id: 0.0 for s in progress.candidates}
     for ans in progress.answers:
         q_features = Feature.query.filter_by(question_id=ans.question_id)
         for f in q_features:
-            score_table[f.solution_id] += ans.value * f.value
-    return [Solution.query.get(s_id) for s_id, score in score_table.items() if score >= 0.0]
+            s_score_table[f.solution_id] += ans.value * f.value
+    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
 
 def can_decide(progress):
     return len(progress.answers) >= len(Question.query.all())
@@ -50,12 +60,12 @@ def push_answer(progress, answer_msg):
     db.session.commit()
 
 def guess_solution(progress):
-    score_table = {s.id: 0.0 for s in progress.candidates}
+    s_score_table = {s.id: 0.0 for s in progress.candidates}
     for ans in progress.answers:
         q_features = Feature.query.filter_by(question_id=ans.question_id)
         for f in q_features:
-            score_table[f.solution.id] += ans.value * f.value
-    return Solution.query.get(max(score_table, key=score_table.get))
+            s_score_table[f.solution.id] += ans.value * f.value
+    return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
 def handle_pending(user_status, message):
     reply_content = []

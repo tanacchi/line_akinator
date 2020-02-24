@@ -30,7 +30,15 @@ def save_status(user_status, new_status=None, next_question=None):
     db.session.add(user_status)
     db.session.commit()
 
-def can_guess(progress):
+def update_candidates(progress):
+    score_table = {solution: 0.0 for s in progress.candidates}
+    for ans in progress.answers:
+        q_features = Feature.query.filter_by(question_id=ans.question_id)
+        for f in q_features:
+            score_table[f.solution] += ans.value * f.value
+    return [solution for solution, score in score_table.items() if score >= 0.0]
+
+def can_decide(progress):
     return len(progress.answers) >= len(Question.query.all())
 
 def push_answer(progress, answer_msg):
@@ -42,7 +50,7 @@ def push_answer(progress, answer_msg):
     db.session.commit()
 
 def guess_solution(progress):
-    score_table = {s.id: 0.0 for s in Solution.query.all()}
+    score_table = {s.id: 0.0 for s in progress.candidates}
     for ans in progress.answers:
         q_features = Feature.query.filter_by(question_id=ans.question_id)
         for f in q_features:
@@ -64,7 +72,10 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
-        if not can_guess(user_status.progress):
+        user_status.progress.candidates = update_candidates(user_status.progress)
+        for c in user_status.progress.candidates:
+            print("candidate: ", c.name)
+        if not can_decide(user_status.progress):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))

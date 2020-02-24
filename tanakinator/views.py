@@ -21,13 +21,11 @@ str_value_table = {
 def root():
     solutions = {s.id: s.name    for s in Solution.query.all()}
     questions = {q.id: q.message for q in Question.query.all()}
+    features = Feature.query.all()
     table = {s_id: {q_id: '-' for q_id in questions} for s_id in solutions}
-    for s_id, features in table.items():
-        for q_id, value in features.items():
-            f = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
-            if not f:
-                continue
-            table[s_id][q_id] = CIRCLE_CHAR if f.value == 1.0 else CROSS_CHAR
+    for feature in features:
+        s_id, q_id = feature.solution_id, feature.question_id
+        table[s_id][q_id] = CIRCLE_CHAR if feature.value == 1.0 else CROSS_CHAR
     return render_template('index.html', solutions=solutions, questions=questions, table=table)
 
 @app.route('/solutions/create', methods=['GET', 'POST'])

@@ -21,18 +21,15 @@ def get_user_status(user_id):
 def select_next_question(progress):
     related_question_set = set()
     for s in progress.candidates:
-        print("s => ", s)
         q_set = {f.question_id for f in s.features}
-        print("q_set: ", q_set)
         related_question_set.update(q_set)
     q_score_table = {q_id: 0.0 for q_id in list(related_question_set)}
-    print("q_score_table(before): ", q_score_table)
     for s in progress.candidates:
         for q_id in q_score_table:
             feature = Feature.query.filter_by(question_id=q_id, solution_id=s.id).first()
             q_score_table[q_id] += feature.value
     q_score_table = {key: abs(value) for key, value in q_score_table.items()}
-    print("q_score_table(after): ", q_score_table)
+    print("[select_next_question] q_score_table: ", q_score_table)
     next_q_id = min(q_score_table, key=q_score_table.get)
     return Question.query.get(next_q_id)
 
@@ -120,4 +117,3 @@ def handle_guessing(user_status, message):
         reply_text = "Pardon?"
     reply_content.append(TextMessageForm(text=reply_text))
     return reply_content
-

@@ -46,7 +46,7 @@ def solution_create():
                 q_id = int(attr[2:])
                 feature = Feature()
                 feature.question_id = q_id
-                feature.value = str_value_table[request.form.get(f"q_{q_id}")]
+                feature.value = str_value_table[value]
                 new_solution.features.append(feature)
         db.session.add(new_solution)
         db.session.commit()
@@ -81,12 +81,21 @@ def solution_edit(solution_id):
 @app.route('/questions/create', methods=['GET', 'POST'])
 def question_create():
     if request.method == 'GET':
-        return render_template('questions/create.html')
+        solutions = Solution.query.all()
+        return render_template('questions/create.html', solutions=solutions)
     else:
         new_question = Question()
-        message = request.form.get("message")
-        if message == "": return redirect(url_for('question_create'))
-        new_question.message = message
+        for attr, value in request.form.items():
+            if attr == 'message':
+                message = request.form.get('message')
+                if message == "": return redirect(url_for('question_create'))
+                new_question.message = message
+            else:
+                s_id = int(attr[2:])
+                feature = Feature()
+                feature.solution_id = s_id
+                feature.value = str_value_table[value]
+                new_question.features.append(feature)
         db.session.add(new_question)
         db.session.commit()
         return redirect(url_for('root'))

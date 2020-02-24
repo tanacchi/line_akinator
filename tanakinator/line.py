@@ -2,7 +2,7 @@ from tanakinator import line, handler, db
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.akinator import (
     get_user_status, handle_pending, handle_asking,
-    handle_guessing
+    handle_guessing, handle_resuming
 )
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
@@ -25,7 +25,8 @@ def convert_form_to_message(form_list):
 akinator_handler_table = {
     GameState.PENDING:     handle_pending,
     GameState.ASKING:      handle_asking,
-    GameState.GUESSING:    handle_guessing
+    GameState.GUESSING:    handle_guessing,
+    GameState.RESUMING:    handle_resuming,
 }
 
 @handler.add(MessageEvent, message=TextMessage)

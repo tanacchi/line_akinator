@@ -21,14 +21,18 @@ def get_user_status(user_id):
 def select_next_question(progress):
     related_question_set = set()
     for s in progress.candidates:
+        print("s => ", s)
         q_set = {f.question_id for f in s.features}
+        print("q_set: ", q_set)
         related_question_set.update(q_set)
     q_score_table = {q_id: 0.0 for q_id in list(related_question_set)}
+    print("q_score_table(before): ", q_score_table)
     for s in progress.candidates:
         for q_id in q_score_table:
             feature = Feature.query.filter_by(question_id=q_id, solution_id=s.id).first()
             q_score_table[q_id] += feature.value
     q_score_table = {key: abs(value) for key, value in q_score_table.items()}
+    print("q_score_table(after): ", q_score_table)
     next_q_id = min(q_score_table, key=q_score_table.get)
     return Question.query.get(next_q_id)
 
@@ -41,12 +45,15 @@ def save_status(user_status, new_status=None, next_question=None):
     db.session.commit()
 
 def update_candidates(progress):
+    q_id = progress.latest_question.id
+    latest_answer = Answer.query.filter_by(question_id=q_id).order_by(Answer.id.desc()).first()
     s_score_table = {s.id: 0.0 for s in progress.candidates}
-    for ans in progress.answers:
-        q_features = Feature.query.filter_by(question_id=ans.question_id)
-        for f in q_features:
-            s_score_table[f.solution_id] += ans.value * f.value
-    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
+    for s_id in s_score_table:
+        feature = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
+        s_score_table[s_id] = latest_answer.value * feature.value
+    print("[update_candidates] s_score_table: ", s_score_table)
+    new_candidates = [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
+    return new_candidates
 
 def can_decide(progress):
     return len(progress.answers) >= len(Question.query.all())
@@ -60,11 +67,14 @@ def push_answer(progress, answer_msg):
     db.session.commit()
 
 def guess_solution(progress):
+    latest_q_id = progress.latest_question.id
     s_score_table = {s.id: 0.0 for s in progress.candidates}
-    for ans in progress.answers:
-        q_features = Feature.query.filter_by(question_id=ans.question_id)
-        for f in q_features:
-            s_score_table[f.solution.id] += ans.value * f.value
+    for s_id in s_score_table:
+        for ans in progress.answers:
+            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
+            if not feature: continue
+            s_score_table[s_id] += ans.value * feature.value
+    print("[guess_solution] s_score_table: ", s_score_table)
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
 def handle_pending(user_status, message):
@@ -83,6 +93,8 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
+        for c in user_status.progress.candidates:
+            print("candidate:: id: {}, name: {}".format(c.id, c.name))
         user_status.progress.candidates = update_candidates(user_status.progress)
         if not can_decide(user_status.progress):
             question = select_next_question(user_status.progress)

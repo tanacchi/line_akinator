@@ -1,16 +1,9 @@
 from tanakinator import line, handler, db
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
-from tanakinator.models import (
-    UserStatus, Question, Progress,
-    Answer, Solution, Feature
-)
 from tanakinator.akinator import (
-    get_user_status, select_next_question, 
-    save_status, can_guess, push_answer, 
-    guess_solution, handle_pending, handle_asking,
+    get_user_status, handle_pending, handle_asking,
     handle_guessing
 )
-
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
     QuickReply, QuickReplyButton, MessageAction

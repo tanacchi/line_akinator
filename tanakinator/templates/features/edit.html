@@ -1,0 +1,23 @@
+<h1>{{ solution.name }}</h1>
+
+<form action="" method="post">
+  solution_id<br>
+  <input type="number" name="solution_id" value="{{ solution.id }}" width="3" readonly><br>
+  question_id<br>
+  <input type="number" name="question_id" value="{{ question.id }}" width="3" readonly><br>
+  <h2>{{ solution.name }} に関する質問</h2>
+  <h3>{{ question.message }}</h3>
+    {% if not feature.value or feature == 0.0 %}
+      <input type="radio" name="value" value="はい"> はい
+      <input type="radio" name="value" value="いいえ"> いいえ
+    {% elif feature.value == 1.0 %}
+      <input type="radio" name="value" value="はい" checked> はい
+      <input type="radio" name="value" value="いいえ"> いいえ
+    {% else %}
+      <input type="radio" name="value" value="はい"> はい
+      <input type="radio" name="value" value="いいえ" checked> いいえ
+    {% endif %}
+  </p>
+  <input type="submit" value="更新">
+</form>
+<a href="{{ url_for('root') }}">戻る</a>

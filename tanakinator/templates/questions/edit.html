@@ -1,0 +1,7 @@
+<h1>質問内容の編集</h1>
+
+<form action="" method="post">
+  <textarea name="message" rows="10" cols="30">{{ question.message }}</textarea>
+  <input type="submit" value="更新">
+</form>
+<a href="{{ url_for('root') }}">戻る</a>

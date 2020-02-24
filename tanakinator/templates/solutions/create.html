@@ -1,0 +1,15 @@
+<h1>新しい回答の登録</h1>
+
+<form action="" method="post">
+  <h3>名称</h3>
+  <input type="text" name="name" width="80" height="30">
+{% for question  in questions %}
+  <p>
+    <h3>{{ question.message }}</h3>
+    <input type="radio" name="q_{{question.id}}" value="はい"> はい
+    <input type="radio" name="q_{{question.id}}" value="いいえ"> いいえ
+  </p>
+{% endfor %}
+  <input type="submit" value="登録">
+</form>
+<a href="{{ url_for('root') }}">戻る</a>

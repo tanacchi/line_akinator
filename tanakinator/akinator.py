@@ -56,7 +56,7 @@ def update_candidates(progress):
     return new_candidates
 
 def can_decide(progress):
-    return len(progress.answers) >= len(Question.query.all())
+    return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
 
 def push_answer(progress, answer_msg):
     answer = Answer()

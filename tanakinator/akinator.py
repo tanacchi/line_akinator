@@ -113,18 +113,21 @@ def handle_asking(user_status, message):
 
 def handle_guessing(user_status, message):
     reply_content = []
-    if message in ["はい", "いいえ"]:
-        reply_text = "やったー" if message == "はい" else "ええ〜"
+    if message == "はい":
+        reply_content.append(TextMessageForm(text="やったー"))
         reset_status(user_status)
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="ええ〜"))
+        reply_content.append(QuickMessageForm(text="続けますか?", items=["はい", "いいえ"]))
+        save_status(user_status, GameState.RESUMING)
     else:
-        reply_text = "Pardon?"
-    reply_content.append(TextMessageForm(text=reply_text))
+        reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content
 
 def handle_resuming(user_status, message):
     reply_content = []
     if message == "はい":
-        user_status.candidates = Solution.query.all()
+        user_status.progress.candidates = Solution.query.all()
         question = select_next_question(user_status.progress)
         reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
         save_status(user_status, GameState.ASKING, question)

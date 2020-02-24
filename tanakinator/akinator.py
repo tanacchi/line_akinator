@@ -41,6 +41,11 @@ def save_status(user_status, new_status=None, next_question=None):
     db.session.add(user_status)
     db.session.commit()
 
+def reset_status(user_status):
+    db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
+    db.session.delete(user_status.progress)
+    save_status(user_status, GameState.PENDING)
+
 def update_candidates(progress):
     q_id = progress.latest_question.id
     latest_answer = Answer.query.filter_by(question_id=q_id).order_by(Answer.id.desc()).first()
@@ -108,12 +113,27 @@ def handle_asking(user_status, message):
 
 def handle_guessing(user_status, message):
     reply_content = []
-    if message in ["はい", "いいえ"]:
-        reply_text = "やったー" if message == "はい" else "ええ〜"
-        db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
-        db.session.delete(user_status.progress)
-        save_status(user_status, GameState.PENDING)
+    if message == "はい":
+        reply_content.append(TextMessageForm(text="やったー"))
+        reset_status(user_status)
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="ええ〜"))
+        reply_content.append(QuickMessageForm(text="続けますか?", items=["はい", "いいえ"]))
+        save_status(user_status, GameState.RESUMING)
     else:
-        reply_text = "Pardon?"
-    reply_content.append(TextMessageForm(text=reply_text))
+        reply_content.append(TextMessageForm(text="Pardon?"))
+    return reply_content
+
+def handle_resuming(user_status, message):
+    reply_content = []
+    if message == "はい":
+        user_status.progress.candidates = Solution.query.all()
+        question = select_next_question(user_status.progress)
+        reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
+        save_status(user_status, GameState.ASKING, question)
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="そっすか〜…"))
+        reset_status(user_status)
+    else:
+        reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content

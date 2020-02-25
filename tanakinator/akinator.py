@@ -64,7 +64,7 @@ def update_candidates(progress):
 
 def can_decide(s_score_table):
     scores = list(s_score_table.values())
-    return scores[0] != scores[1]
+    return len(scores) == 1 or scores[0] != scores[1]
 
 def push_answer(progress, answer_msg):
     answer = Answer()
@@ -147,9 +147,8 @@ def handle_resuming(user_status, message):
         save_status(user_status, GameState.ASKING, question)
     elif message == "いいえ":
         reply_content.append(TextMessageForm(text="そっすか〜…"))
-        reply_content.append(TextMessageForm(text="当てはまるものを選んでください"))
         items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]
-        reply_content.append(QuickMessageForm(text=question.message, items=items))
+        reply_content.append(QuickMessageForm(text="当てはまるものを選んでください", items=items))
         reset_status(user_status)
     else:
         reply_content.append(TextMessageForm(text="Pardon?"))

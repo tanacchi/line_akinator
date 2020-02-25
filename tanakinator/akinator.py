@@ -192,8 +192,7 @@ def handle_confirming(user_status, message):
     if message == "はい":
         db.session.delete(pre_solution)
         db.session.commit()
-        reset_status(user_status)
-        save_status(user_status, GameState.PENDING)
+        save_status(user_status, GameState.TRAINING)
         text = name + "ですね．\n覚えておきます．"
         reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
@@ -209,7 +208,13 @@ def handle_confirming(user_status, message):
     return reply_content
 
 def handle_training(user_status, message):
-    pass
+    reply_content = []
+    if message == "回答終了":
+        reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
+    else:
+        reply_content.append(TextMessageForm(text="Pardon?"))
+    return reply_content
 
 def handle_featuring(user_status, message):
     pass

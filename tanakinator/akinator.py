@@ -76,7 +76,7 @@ def push_answer(progress, answer_msg):
 def guess_solution(s_score_table):
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
-def update_features(progress, true_solution):
+def update_features(progress, true_solution=None):
     solution = true_solution or guess_solution(gen_solution_score_table(progress))
     qid_feature_table = {f.question_id: f for f in solution.features}
     for ans in progress.answers:

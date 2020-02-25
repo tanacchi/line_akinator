@@ -1,4 +1,5 @@
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
+from statistics import mean
 
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
@@ -52,12 +53,14 @@ def gen_solution_score_table(progress):
         for ans in progress.answers:
             feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
             s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
+    s_score_table = OrderedDict(sorted(s_score_table.items(), key=lambda x: x[1]))
     print("s_score_table: ", s_score_table)
     return s_score_table
 
 def update_candidates(progress):
     s_score_table = gen_solution_score_table(progress)
-    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
+    score_mean = mean(s_score_table.values())
+    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= score_mean]
 
 def can_decide(progress):
     return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
@@ -74,7 +77,7 @@ def guess_solution(s_score_table):
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
 def update_features(progress):
-    solution = guess_solution(progress)
+    solution = guess_solution(gen_solution_score_table(progress))
     qid_feature_table = {f.question_id: f for f in solution.features}
     for ans in progress.answers:
         if ans.question_id in qid_feature_table:

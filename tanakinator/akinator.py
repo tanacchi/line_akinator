@@ -165,11 +165,21 @@ def handle_begging(user_status, message):
     reply_content = []
     if message in [s.name for s in Solution.query.all()]:
         true_solution = Solution.query.filter_by(name=message).first()
-        print("Not answered questions: ", get_not_answered_questions(true_solution))
         update_features(user_status.progress, true_solution)
-        reset_status(user_status)
-        save_status(user_status, GameState.PENDING)
         reply_content.append(TextMessageForm(text="なるほど，勉強になります．"))
+        not_answered_qustions = get_not_answered_questions(true_solution)
+        print("Not answered questions: ", not_answered_qustions)
+        next_status = GameState.TRAINING if not_answered_qustions else GameState.PENDING
+        if next_status == GameState.TRAINING:
+            q_id = not_answered_qustions.pop(0)
+            question = Question.query.get(q_id)
+            user_status.progress.latest_question = question
+            text = true_solution.name + " について\n少しお聞かせください"
+            reply_content.append(TextMessageForm(text=text))
+            reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
+        else:
+            reset_status(user_status)
+        save_status(user_status, next_status)
     elif message == "どれも当てはまらない":
         save_status(user_status, GameState.REGISTERING)
         reply_content.append(TextMessageForm(text="答えを入力してくださいな…"))
@@ -218,6 +228,11 @@ def handle_training(user_status, message):
     if message == "回答終了":
         reset_status(user_status)
         save_status(user_status, GameState.PENDING)
+        reply_content.append(TextMessageForm(text="ありがとうございました"))
+    elif message == "はい":
+        reply_content.append(TextMessageForm(text="はい"))
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="いいえ"))
     else:
         reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content

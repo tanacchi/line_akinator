@@ -64,7 +64,7 @@ def update_candidates(progress):
 
 def can_decide(s_score_table):
     scores = list(s_score_table.values())
-    return len(scores) == 1 or scores[0] != scores[1]
+    return len(scores) == 1 or scores[0] != scores[1] or all(x == scores[0] for x in scores)
 
 def push_answer(progress, answer_msg):
     answer = Answer()

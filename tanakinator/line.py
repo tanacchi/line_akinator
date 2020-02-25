@@ -27,6 +27,13 @@ akinator_handler_table = {
     GameState.ASKING:      handle_asking,
     GameState.GUESSING:    handle_guessing,
     GameState.RESUMING:    handle_resuming,
+    GameState.BEGGING:     handle_begging,
+    GameState.REGISTERING: handle_registering,
+    GameState.CONFIRMING:  handle_confirming,
+    GameState.TRAINING:    handle_training,
+    GameState.FEATURING:   handle_featuring,
+    GameState.LABELING:    handle_labeling,
+    GameState.UPDATING:    handle_updating,
 }
 
 @handler.add(MessageEvent, message=TextMessage)

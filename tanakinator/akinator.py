@@ -151,3 +151,24 @@ def handle_resuming(user_status, message):
     else:
         reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content
+
+def handle_begging(user_status, message):
+    pass
+
+def handle_registering(user_status, message):
+    pass
+
+def handle_confirming(user_status, message):
+    pass
+
+def handle_training(user_status, message):
+    pass
+
+def handle_featuring(user_status, message):
+    pass
+
+def handle_labeling(user_status, message):
+    pass
+
+def handle_updating(user_status, message):
+    pass

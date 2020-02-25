@@ -62,8 +62,9 @@ def update_candidates(progress):
     score_mean = mean(s_score_table.values())
     return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= score_mean]
 
-def can_decide(progress):
-    return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
+def can_decide(s_score_table):
+    scores = list(s_score_table.values())
+    return scores[0] != scores[1]
 
 def push_answer(progress, answer_msg):
     answer = Answer()
@@ -110,7 +111,7 @@ def handle_asking(user_status, message):
         for c in user_status.progress.candidates:
             print("candidate:: id: {}, name: {}".format(c.id, c.name))
         s_score_table = gen_solution_score_table(user_status.progress)
-        if not can_decide(user_status.progress):
+        if not can_decide(s_score_table):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))

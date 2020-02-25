@@ -57,14 +57,13 @@ def gen_solution_score_table(progress):
     print("s_score_table: ", s_score_table)
     return s_score_table
 
-def update_candidates(progress):
-    s_score_table = gen_solution_score_table(progress)
+def update_candidates(s_score_table):
     score_mean = mean(s_score_table.values())
     return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= score_mean]
 
-def can_decide(s_score_table):
+def can_decide(s_score_table, old_s_score_table):
     scores = list(s_score_table.values())
-    return len(scores) == 1 or scores[0] != scores[1] or all(x == scores[0] for x in scores)
+    return len(scores) == 1 or scores[0] != scores[1] or s_score_table.keys() == old_s_score_table.keys()
 
 def push_answer(progress, answer_msg):
     answer = Answer()
@@ -107,11 +106,12 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
-        user_status.progress.candidates = update_candidates(user_status.progress)
+        old_s_score_table = gen_solution_score_table(user_status.progress)
+        user_status.progress.candidates = update_candidates(old_s_score_table)
         for c in user_status.progress.candidates:
             print("candidate:: id: {}, name: {}".format(c.id, c.name))
         s_score_table = gen_solution_score_table(user_status.progress)
-        if not can_decide(s_score_table):
+        if not can_decide(s_score_table, old_s_score_table):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))

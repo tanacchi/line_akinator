@@ -46,16 +46,18 @@ def reset_status(user_status):
     db.session.delete(user_status.progress)
     save_status(user_status, GameState.PENDING)
 
-def update_candidates(progress):
-    q_id = progress.latest_question.id
-    latest_answer = Answer.query.filter_by(question_id=q_id).order_by(Answer.id.desc()).first()
+def gen_solution_score_table(progress):
     s_score_table = {s.id: 0.0 for s in progress.candidates}
     for s_id in s_score_table:
-        feature = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
-        s_score_table[s_id] = latest_answer.value * (feature.value if feature else 0.0)
-    print("[update_candidates] s_score_table: ", s_score_table)
-    new_candidates = [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
-    return new_candidates
+        for ans in progress.answers:
+            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
+            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
+    print("s_score_table: ", s_score_table)
+    return s_score_table
+
+def update_candidates(progress):
+    s_score_table = gen_solution_score_table(progress)
+    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
 
 def can_decide(progress):
     return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
@@ -68,14 +70,7 @@ def push_answer(progress, answer_msg):
     db.session.add(answer)
     db.session.commit()
 
-def guess_solution(progress):
-    latest_q_id = progress.latest_question.id
-    s_score_table = {s.id: 0.0 for s in progress.candidates}
-    for s_id in s_score_table:
-        for ans in progress.answers:
-            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
-            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
-    print("[guess_solution] s_score_table: ", s_score_table)
+def guess_solution(s_score_table):
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
 def update_features(progress):
@@ -108,15 +103,16 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
+        user_status.progress.candidates = update_candidates(user_status.progress)
         for c in user_status.progress.candidates:
             print("candidate:: id: {}, name: {}".format(c.id, c.name))
-        user_status.progress.candidates = update_candidates(user_status.progress)
+        s_score_table = gen_solution_score_table(user_status.progress)
         if not can_decide(user_status.progress):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
         else:
-            most_likely_solution = guess_solution(user_status.progress)
+            most_likely_solution = guess_solution(s_score_table)
             reply_text = "思い浮かべているのは\n\n" + most_likely_solution.name + "\n\nですか?"
             save_status(user_status, GameState.GUESSING)
             reply_content.append(QuickMessageForm(text=reply_text, items=["はい", "いいえ"]))

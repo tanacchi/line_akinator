@@ -192,6 +192,11 @@ def handle_confirming(user_status, message):
     if message == "はい":
         db.session.delete(pre_solution)
         db.session.commit()
+        new_solution = Solution()
+        new_solution.name = name
+        db.session.add(new_solution)
+        db.session.commit()
+        update_features(user_status.progress, new_solution)
         reset_status(user_status)
         save_status(user_status, GameState.PENDING)
         text = name + "ですね．\n覚えておきます．"

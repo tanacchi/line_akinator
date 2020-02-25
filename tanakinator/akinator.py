@@ -199,9 +199,10 @@ def handle_confirming(user_status, message):
         update_features(user_status.progress, new_solution)
         text = name + "ですね．\n覚えておきます．"
         reply_content.append(TextMessageForm(text=text))
-        save_status(user_status, GameState.FEATURING)
+        user_status.progress.candidates.insert(0, new_solution)
         text = "最後に，\n" + name + "には当てはまって，\n" \
-             + user_status.progress.candidates[0].name + "には当てはまらないような\n質問を入力してください"
+             + user_status.progress.candidates[1].name + "には当てはまらないような\n質問を入力してください"
+        save_status(user_status, GameState.FEATURING)
         reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
         db.session.delete(pre_solution)
@@ -220,9 +221,28 @@ def handle_training(user_status, message):
 
 def handle_featuring(user_status, message):
     reply_content = []
+    question = Question()
+    question.message = message
+    db.session.add(question)
+    db.session.commit()
+    # New
+    feature = Feature()
+    feature.solution_id = user_status.progress.candidates[0].id
+    feature.question_id = question.id
+    feature.value = 1.0
+    db.session.add(feature)
+    db.session.commit()
+    # Most likely
+    feature = Feature()
+    feature.solution_id = user_status.progress.candidates[1].id
+    feature.question_id = question.id
+    feature.value = -1.0
+    db.session.add(feature)
+    db.session.commit()
+
     reset_status(user_status)
     save_status(user_status, GameState.PENDING)
-    reply_content.append(TextMessageForm(text=message))
+    reply_content.append(TextMessageForm(text="ありがとうございました"))
     return reply_content
 
 def handle_labeling(user_status, message):

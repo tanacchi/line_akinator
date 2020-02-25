@@ -77,8 +77,8 @@ def push_answer(progress, answer_msg):
 def guess_solution(s_score_table):
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
-def update_features(progress):
-    solution = guess_solution(gen_solution_score_table(progress))
+def update_features(progress, true_solution):
+    solution = true_solution or guess_solution(gen_solution_score_table(progress))
     qid_feature_table = {f.question_id: f for f in solution.features}
     for ans in progress.answers:
         if ans.question_id in qid_feature_table:
@@ -155,7 +155,21 @@ def handle_resuming(user_status, message):
     return reply_content
 
 def handle_begging(user_status, message):
-    pass
+    reply_content = []
+    if message in [q.name for q in Question.query.all()]:
+        true_solution = Solution.query.filter_by(name=message).first()
+        update_features(user_status.progress, true_solution)
+        reset_status(user_status)
+        reply_content.append(TextMessageForm(text="なるほど，勉強になります．"))
+    elif message == "どれも当てはまらない":
+        reply_content.append(TextMessageForm(text="そりゃわかんないですわ…"))
+        reset_status(user_status)
+    else:
+        reply_content.append(TextMessageForm(text="なにそれは…"))
+        items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]
+        reply_content.append(QuickMessageForm(text="当てはまるものを選んでください", items=items))
+    return reply_content
+
 
 def handle_registering(user_status, message):
     pass

@@ -197,9 +197,11 @@ def handle_confirming(user_status, message):
         db.session.add(new_solution)
         db.session.commit()
         update_features(user_status.progress, new_solution)
-        reset_status(user_status)
-        save_status(user_status, GameState.PENDING)
         text = name + "ですね．\n覚えておきます．"
+        reply_content.append(TextMessageForm(text=text))
+        save_status(user_status, GameState.FEATURING)
+        text = "最後に，\n" + name + "には当てはまって，\n" \
+             + user_status.progress.candidates[0].name + "には当てはまらないような\n質問を入力してください"
         reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
         db.session.delete(pre_solution)
@@ -217,7 +219,11 @@ def handle_training(user_status, message):
     pass
 
 def handle_featuring(user_status, message):
-    pass
+    reply_content = []
+    reset_status(user_status)
+    save_status(user_status, GameState.PENDING)
+    reply_content.append(TextMessageForm(text=message))
+    return reply_content
 
 def handle_labeling(user_status, message):
     pass

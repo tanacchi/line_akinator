@@ -91,6 +91,11 @@ def update_features(progress, true_solution=None):
         db.session.add(feature)
         db.session.commit()
 
+def get_not_answered_questions(solution):
+    answered_question_ids = {f.question_id for f in solution.features}
+    all_question_ids = {q.id for q in Question.query.all()}
+    return list(all_question_ids - answered_question_ids)
+
 def handle_pending(user_status, message):
     reply_content = []
     if message == "はじめる":
@@ -160,6 +165,7 @@ def handle_begging(user_status, message):
     reply_content = []
     if message in [s.name for s in Solution.query.all()]:
         true_solution = Solution.query.filter_by(name=message).first()
+        print("Not answered questions: ", get_not_answered_questions(true_solution))
         update_features(user_status.progress, true_solution)
         reset_status(user_status)
         save_status(user_status, GameState.PENDING)

@@ -21,6 +21,7 @@ class Progress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_status_id = db.Column(db.Integer, db.ForeignKey('user_status.id'), unique=True)
     answers = db.relationship('Answer', lazy=True)
+    prepared_solution = db.relationship('PreparedSolution', uselist=False, lazy=True)
     latest_question = db.relationship('Question', secondary=progresses, uselist=False, lazy=True)
     candidates = db.relationship('Solution', secondary=candidates, lazy=True)
 
@@ -54,6 +55,11 @@ class Answer(db.Model):
     progress_id = db.Column(db.Integer, db.ForeignKey('progress.id'), unique=True)
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
     value = db.Column(db.Float)
+
+class PreparedSolution(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    progress_id = db.Column(db.Integer, db.ForeignKey('progress.id'), unique=True)
+    name = db.Column(db.String(80), nullable=False, unique=True)
 
 
 def init():

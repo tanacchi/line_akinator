@@ -19,8 +19,19 @@ def get_user_status(user_id):
     return user_status
 
 def select_next_question(progress):
-    all_questions = Question.query.all()
-    return all_questions[len(progress.answers)]
+    related_question_set = set()
+    for s in progress.candidates:
+        q_set = {f.question_id for f in s.features}
+        related_question_set.update(q_set)
+    q_score_table = {q_id: 0.0 for q_id in list(related_question_set)}
+    for s in progress.candidates:
+        for q_id in q_score_table:
+            feature = Feature.query.filter_by(question_id=q_id, solution_id=s.id).first()
+            q_score_table[q_id] += feature.value if feature else 0.0
+    q_score_table = {key: abs(value) for key, value in q_score_table.items()}
+    print("[select_next_question] q_score_table: ", q_score_table)
+    next_q_id = min(q_score_table, key=q_score_table.get)
+    return Question.query.get(next_q_id)
 
 def save_status(user_status, new_status=None, next_question=None):
     if new_status:
@@ -30,8 +41,24 @@ def save_status(user_status, new_status=None, next_question=None):
     db.session.add(user_status)
     db.session.commit()
 
-def can_guess(progress):
-    return len(progress.answers) >= len(Question.query.all())
+def reset_status(user_status):
+    db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
+    db.session.delete(user_status.progress)
+    save_status(user_status, GameState.PENDING)
+
+def update_candidates(progress):
+    q_id = progress.latest_question.id
+    latest_answer = Answer.query.filter_by(question_id=q_id).order_by(Answer.id.desc()).first()
+    s_score_table = {s.id: 0.0 for s in progress.candidates}
+    for s_id in s_score_table:
+        feature = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
+        s_score_table[s_id] = latest_answer.value * (feature.value if feature else 0.0)
+    print("[update_candidates] s_score_table: ", s_score_table)
+    new_candidates = [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
+    return new_candidates
+
+def can_decide(progress):
+    return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
 
 def push_answer(progress, answer_msg):
     answer = Answer()
@@ -42,17 +69,34 @@ def push_answer(progress, answer_msg):
     db.session.commit()
 
 def guess_solution(progress):
-    score_table = {s.id: 0.0 for s in Solution.query.all()}
+    latest_q_id = progress.latest_question.id
+    s_score_table = {s.id: 0.0 for s in progress.candidates}
+    for s_id in s_score_table:
+        for ans in progress.answers:
+            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
+            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
+    print("[guess_solution] s_score_table: ", s_score_table)
+    return Solution.query.get(max(s_score_table, key=s_score_table.get))
+
+def update_features(progress):
+    solution = guess_solution(progress)
+    qid_feature_table = {f.question_id: f for f in solution.features}
     for ans in progress.answers:
-        q_features = Feature.query.filter_by(question_id=ans.question_id)
-        for f in q_features:
-            score_table[f.solution.id] += ans.value * f.value
-    return Solution.query.get(max(score_table, key=score_table.get))
+        if ans.question_id in qid_feature_table:
+            feature = qid_feature_table[ans.question_id]
+        else:
+            feature = Feature()
+            feature.question_id = ans.question_id
+            feature.solution_id = solution.id
+        feature.value = ans.value
+        db.session.add(feature)
+        db.session.commit()
 
 def handle_pending(user_status, message):
     reply_content = []
     if message == "はじめる":
         user_status.progress = Progress()
+        user_status.progress.candidates = Solution.query.all()
         question = select_next_question(user_status.progress)
         save_status(user_status, GameState.ASKING, question)
         reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
@@ -64,7 +108,10 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
-        if not can_guess(user_status.progress):
+        for c in user_status.progress.candidates:
+            print("candidate:: id: {}, name: {}".format(c.id, c.name))
+        user_status.progress.candidates = update_candidates(user_status.progress)
+        if not can_decide(user_status.progress):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
@@ -79,13 +126,28 @@ def handle_asking(user_status, message):
 
 def handle_guessing(user_status, message):
     reply_content = []
-    if message in ["はい", "いいえ"]:
-        reply_text = "やったー" if message == "はい" else "ええ〜"
-        db.session.query(Answer).filter_by(progress_id=user_status.progress.id).delete()
-        db.session.delete(user_status.progress)
-        save_status(user_status, GameState.PENDING)
+    if message == "はい":
+        reply_content.append(TextMessageForm(text="やったー"))
+        update_features(user_status.progress)
+        reset_status(user_status)
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="ええ〜"))
+        reply_content.append(QuickMessageForm(text="続けますか?", items=["はい", "いいえ"]))
+        save_status(user_status, GameState.RESUMING)
     else:
-        reply_text = "Pardon?"
-    reply_content.append(TextMessageForm(text=reply_text))
+        reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content
 
+def handle_resuming(user_status, message):
+    reply_content = []
+    if message == "はい":
+        user_status.progress.candidates = Solution.query.all()
+        question = select_next_question(user_status.progress)
+        reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
+        save_status(user_status, GameState.ASKING, question)
+    elif message == "いいえ":
+        reply_content.append(TextMessageForm(text="そっすか〜…"))
+        reset_status(user_status)
+    else:
+        reply_content.append(TextMessageForm(text="Pardon?"))
+    return reply_content

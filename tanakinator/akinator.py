@@ -1,4 +1,4 @@
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from statistics import mean
 
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm

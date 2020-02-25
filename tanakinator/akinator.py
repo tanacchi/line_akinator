@@ -147,23 +147,26 @@ def handle_resuming(user_status, message):
         save_status(user_status, GameState.ASKING, question)
     elif message == "いいえ":
         reply_content.append(TextMessageForm(text="そっすか〜…"))
-        items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]
+        # items must not be more than 13.
+        items = [s.name for s in user_status.progress.candidates][:12] + ["どれも当てはまらない"]
         reply_content.append(QuickMessageForm(text="当てはまるものを選んでください", items=items))
-        reset_status(user_status)
+        save_status(user_status, GameState.BEGGING)
     else:
         reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content
 
 def handle_begging(user_status, message):
     reply_content = []
-    if message in [q.name for q in Question.query.all()]:
+    if message in [s.name for s in Solution.query.all()]:
         true_solution = Solution.query.filter_by(name=message).first()
         update_features(user_status.progress, true_solution)
         reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
         reply_content.append(TextMessageForm(text="なるほど，勉強になります．"))
     elif message == "どれも当てはまらない":
-        reply_content.append(TextMessageForm(text="そりゃわかんないですわ…"))
         reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
+        reply_content.append(TextMessageForm(text="そりゃわかんないですわ…"))
     else:
         reply_content.append(TextMessageForm(text="なにそれは…"))
         items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]

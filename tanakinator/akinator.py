@@ -1,4 +1,5 @@
-from collections import defaultdict
+from collections import OrderedDict
+from statistics import mean
 
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
@@ -46,19 +47,23 @@ def reset_status(user_status):
     db.session.delete(user_status.progress)
     save_status(user_status, GameState.PENDING)
 
-def update_candidates(progress):
-    q_id = progress.latest_question.id
-    latest_answer = Answer.query.filter_by(question_id=q_id).order_by(Answer.id.desc()).first()
+def gen_solution_score_table(progress):
     s_score_table = {s.id: 0.0 for s in progress.candidates}
     for s_id in s_score_table:
-        feature = Feature.query.filter_by(question_id=q_id, solution_id=s_id).first()
-        s_score_table[s_id] = latest_answer.value * (feature.value if feature else 0.0)
-    print("[update_candidates] s_score_table: ", s_score_table)
-    new_candidates = [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= 0.0]
-    return new_candidates
+        for ans in progress.answers:
+            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
+            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
+    s_score_table = OrderedDict(sorted(s_score_table.items(), key=lambda x: x[1]))
+    print("s_score_table: ", s_score_table)
+    return s_score_table
 
-def can_decide(progress):
-    return len(progress.candidates) == 1 or len(progress.answers) >= Question.query.count()
+def update_candidates(s_score_table):
+    score_mean = mean(s_score_table.values())
+    return [Solution.query.get(s_id) for s_id, score in s_score_table.items() if score >= score_mean]
+
+def can_decide(s_score_table, old_s_score_table):
+    scores = list(s_score_table.values())
+    return len(scores) == 1 or scores[0] != scores[1] or s_score_table.keys() == old_s_score_table.keys()
 
 def push_answer(progress, answer_msg):
     answer = Answer()
@@ -68,18 +73,11 @@ def push_answer(progress, answer_msg):
     db.session.add(answer)
     db.session.commit()
 
-def guess_solution(progress):
-    latest_q_id = progress.latest_question.id
-    s_score_table = {s.id: 0.0 for s in progress.candidates}
-    for s_id in s_score_table:
-        for ans in progress.answers:
-            feature = Feature.query.filter_by(question_id=ans.question_id, solution_id=s_id).first()
-            s_score_table[s_id] += ans.value * (feature.value if feature else 0.0)
-    print("[guess_solution] s_score_table: ", s_score_table)
+def guess_solution(s_score_table):
     return Solution.query.get(max(s_score_table, key=s_score_table.get))
 
-def update_features(progress):
-    solution = guess_solution(progress)
+def update_features(progress, true_solution=None):
+    solution = true_solution or guess_solution(gen_solution_score_table(progress))
     qid_feature_table = {f.question_id: f for f in solution.features}
     for ans in progress.answers:
         if ans.question_id in qid_feature_table:
@@ -108,15 +106,17 @@ def handle_asking(user_status, message):
     reply_content = []
     if message in ["はい", "いいえ"]:
         push_answer(user_status.progress, message)
+        old_s_score_table = gen_solution_score_table(user_status.progress)
+        user_status.progress.candidates = update_candidates(old_s_score_table)
         for c in user_status.progress.candidates:
             print("candidate:: id: {}, name: {}".format(c.id, c.name))
-        user_status.progress.candidates = update_candidates(user_status.progress)
-        if not can_decide(user_status.progress):
+        s_score_table = gen_solution_score_table(user_status.progress)
+        if not can_decide(s_score_table, old_s_score_table):
             question = select_next_question(user_status.progress)
             save_status(user_status, next_question=question)
             reply_content.append(QuickMessageForm(text=question.message, items=["はい", "いいえ"]))
         else:
-            most_likely_solution = guess_solution(user_status.progress)
+            most_likely_solution = guess_solution(s_score_table)
             reply_text = "思い浮かべているのは\n\n" + most_likely_solution.name + "\n\nですか?"
             save_status(user_status, GameState.GUESSING)
             reply_content.append(QuickMessageForm(text=reply_text, items=["はい", "いいえ"]))
@@ -147,7 +147,47 @@ def handle_resuming(user_status, message):
         save_status(user_status, GameState.ASKING, question)
     elif message == "いいえ":
         reply_content.append(TextMessageForm(text="そっすか〜…"))
-        reset_status(user_status)
+        # items must not be more than 13.
+        items = [s.name for s in user_status.progress.candidates][:12] + ["どれも当てはまらない"]
+        reply_content.append(QuickMessageForm(text="当てはまるものを選んでください", items=items))
+        save_status(user_status, GameState.BEGGING)
     else:
         reply_content.append(TextMessageForm(text="Pardon?"))
     return reply_content
+
+def handle_begging(user_status, message):
+    reply_content = []
+    if message in [s.name for s in Solution.query.all()]:
+        true_solution = Solution.query.filter_by(name=message).first()
+        update_features(user_status.progress, true_solution)
+        reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
+        reply_content.append(TextMessageForm(text="なるほど，勉強になります．"))
+    elif message == "どれも当てはまらない":
+        reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
+        reply_content.append(TextMessageForm(text="そりゃわかんないですわ…"))
+    else:
+        reply_content.append(TextMessageForm(text="なにそれは…"))
+        items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]
+        reply_content.append(QuickMessageForm(text="当てはまるものを選んでください", items=items))
+    return reply_content
+
+
+def handle_registering(user_status, message):
+    pass
+
+def handle_confirming(user_status, message):
+    pass
+
+def handle_training(user_status, message):
+    pass
+
+def handle_featuring(user_status, message):
+    pass
+
+def handle_labeling(user_status, message):
+    pass
+
+def handle_updating(user_status, message):
+    pass

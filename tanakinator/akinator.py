@@ -4,7 +4,8 @@ from statistics import mean
 from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
 from tanakinator.models import (
     UserStatus, Question, Answer,
-    Solution, Feature, Progress
+    Solution, Feature, Progress,
+    PreparedSolution
 )
 from tanakinator import db
 
@@ -175,6 +176,9 @@ def handle_begging(user_status, message):
 
 def handle_registering(user_status, message):
     reply_content = []
+    prepared_solution = PreparedSolution()
+    prepared_solution.name = message
+    user_status.progress.prepared_solution = prepared_solution
     save_status(user_status, GameState.CONFIRMING)
     confirm_text = "思い浮かべていたのは\n\n" + message + "\n"
     reply_content.append(TextMessageForm(text=confirm_text))
@@ -183,9 +187,25 @@ def handle_registering(user_status, message):
 
 def handle_confirming(user_status, message):
     reply_content = []
-    reset_status(user_status)
-    save_status(user_status, GameState.PENDING)
-    reply_content.append(TextMessageForm(text="ふーん"))
+    pre_solution = user_status.progress.prepared_solution
+    name = pre_solution.name
+    if message == "はい":
+        db.session.delete(pre_solution)
+        db.session.commit()
+        reset_status(user_status)
+        save_status(user_status, GameState.PENDING)
+        text = name + "ですね．\n覚えておきます．"
+        reply_content.append(TextMessageForm(text=text))
+    elif message == "いいえ":
+        db.session.delete(pre_solution)
+        db.session.commit()
+        save_status(user_status, GameState.REGISTERING)
+        reply_content.append(TextMessageForm(text="おっと"))
+        reply_content.append(TextMessageForm(text="もう一度答えを入力してください"))
+    else:
+        reply_content.append(TextMessageForm(text="ええ…"))
+        confirm_text = "思い浮かべていたのは\n\n" + name + "\n\nでよろしいですか？"
+        reply_content.append(QuickMessageForm(text=confirm_text, items=["はい", "いいえ"]))
     return reply_content
 
 def handle_training(user_status, message):

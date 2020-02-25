@@ -164,9 +164,8 @@ def handle_begging(user_status, message):
         save_status(user_status, GameState.PENDING)
         reply_content.append(TextMessageForm(text="なるほど，勉強になります．"))
     elif message == "どれも当てはまらない":
-        reset_status(user_status)
-        save_status(user_status, GameState.PENDING)
-        reply_content.append(TextMessageForm(text="そりゃわかんないですわ…"))
+        save_status(user_status, GameState.REGISTERING)
+        reply_content.append(TextMessageForm(text="答えを入力してくださいな…"))
     else:
         reply_content.append(TextMessageForm(text="なにそれは…"))
         items = [s.name for s in user_status.progress.candidates] + ["どれも当てはまらない"]
@@ -175,10 +174,19 @@ def handle_begging(user_status, message):
 
 
 def handle_registering(user_status, message):
-    pass
+    reply_content = []
+    save_status(user_status, GameState.CONFIRMING)
+    confirm_text = "思い浮かべていたのは\n\n" + message + "\n"
+    reply_content.append(TextMessageForm(text=confirm_text))
+    reply_content.append(QuickMessageForm(text="…でよろしいですか？", items=["はい", "いいえ"]))
+    return reply_content
 
 def handle_confirming(user_status, message):
-    pass
+    reply_content = []
+    reset_status(user_status)
+    save_status(user_status, GameState.PENDING)
+    reply_content.append(TextMessageForm(text="ふーん"))
+    return reply_content
 
 def handle_training(user_status, message):
     pass

@@ -6,6 +6,7 @@ from flask import (
 )
 from tanakinator import app, handler, db
 from tanakinator.models import Solution, Question, Feature
+from tanakinator.akinator import detect_unidentifiable_solutions
 
 
 CIRCLE_CHAR = '&#9675;'
@@ -19,6 +20,7 @@ str_value_table = {
 
 @app.route('/')
 def root():
+    print(detect_unidentifiable_solutions())
     solutions = {s.id: s.name    for s in Solution.query.all()}
     questions = {q.id: q.message for q in Question.query.all()}
     features = Feature.query.all()

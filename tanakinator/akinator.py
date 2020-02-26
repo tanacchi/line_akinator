@@ -204,10 +204,11 @@ def handle_confirming(user_status, message):
         reply_content.append(TextMessageForm(text=text))
         user_status.progress.candidates.insert(0, new_solution)
         save_status(user_status, GameState.PENDING)
-        text = name + "について\nもっと教えてくださいませんか？"
+        text = "よかったら下のリンクから\n" +  name + "について\nもっと教えてください\n\n" \
+             + f"https://tanakinator.herokuapp.com/solutions/{new_solution.id}/edit"
         #  save_status(user_status, GameState.FEATURING)
         reset_status(user_status)
-        reply_content.append(RefToSolutionForm(text=text, s_id=new_solution.id))
+        reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
         db.session.delete(pre_solution)
         db.session.commit()

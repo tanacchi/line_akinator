@@ -29,7 +29,7 @@ def convert_form_to_message(form_list):
             uri = f"https://tanakinator.herokuapp.com/solutions/{form.s_id}/edit"
             items = [
                 QuickReplyButton(action=URIAction(label="いいよ", uri=uri)),
-                QuickMessageForm(action=MessageAction(label="いやだ", text="See ya!"))
+                QuickReplyButton(action=MessageAction(label="いやだ", text="See ya!"))
             ]
             message = TextSendMessage(text=form.text, quick_reply=QuickReply(items=items))
         reply_content.append(message)

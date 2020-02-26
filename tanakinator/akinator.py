@@ -200,9 +200,10 @@ def handle_confirming(user_status, message):
         text = name + "ですね．\n覚えておきます．"
         reply_content.append(TextMessageForm(text=text))
         user_status.progress.candidates.insert(0, new_solution)
-        text = "最後に，\n" + name + "には当てはまって，\n" \
-             + user_status.progress.candidates[1].name + "には当てはまらないような\n質問を入力してください"
-        save_status(user_status, GameState.FEATURING)
+        #  text = "最後に，\n" + name + "には当てはまって，\n" \
+             #  + user_status.progress.candidates[1].name + "には当てはまらないような\n質問を入力してください"
+        #  save_status(user_status, GameState.FEATURING)
+        save_status(user_status, GameState.PENDING)
         reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
         db.session.delete(pre_solution)

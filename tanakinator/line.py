@@ -1,5 +1,9 @@
+from flask import url_for
 from tanakinator import line, handler, db
-from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
+from tanakinator.common import (
+    GameState, TextMessageForm, QuickMessageForm,
+    RefToSolutionForm
+)
 from tanakinator.akinator import (
     get_user_status, handle_pending, handle_asking,
     handle_guessing, handle_resuming, handle_begging,
@@ -20,6 +24,13 @@ def convert_form_to_message(form_list):
             message = TextSendMessage(text=form.text)
         elif isinstance(form, QuickMessageForm):
             items = [QuickReplyButton(action=MessageAction(label=item, text=item)) for item in form.items]
+            message = TextSendMessage(text=form.text, quick_reply=QuickReply(items=items))
+        elif isinstance(form, RefToSolutionForm):
+            uri = f"https://tanakinator.herokuapp.com/solutions/{form.s_id}/edit"
+            items = [
+                QuickReplyButton(action=URIAction(label="いいよ", uri=uri)),
+                QuickMessageForm(action=MessageAction(label="いやだ", text="See ya!"))
+            ]
             message = TextSendMessage(text=form.text, quick_reply=QuickReply(items=items))
         reply_content.append(message)
     return reply_content

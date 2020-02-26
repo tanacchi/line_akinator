@@ -8,8 +8,7 @@ from tanakinator.akinator import (
 )
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-    QuickReply, QuickReplyButton, MessageAction,
-    URIAction
+    QuickReply, QuickReplyButton, MessageAction
 )
 
 

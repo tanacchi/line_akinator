@@ -22,8 +22,3 @@ class QuickMessageForm(object):
     def __init__(self, text, items=None):
         self.text = text
         self.items = items
-
-class RefToSolutionForm(object):
-    def __init__(self, text, s_id):
-        self.text = text
-        self.s_id = s_id

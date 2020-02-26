@@ -3,7 +3,6 @@ from statistics import mean
 
 from tanakinator.common import(
     GameState, TextMessageForm, QuickMessageForm,
-    RefToSolutionForm
 )
 from tanakinator.models import (
     UserStatus, Question, Answer,

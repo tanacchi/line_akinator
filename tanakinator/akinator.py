@@ -1,7 +1,9 @@
 from collections import OrderedDict
 from statistics import mean
 
-from tanakinator.common import GameState, TextMessageForm, QuickMessageForm
+from tanakinator.common import(
+    GameState, TextMessageForm, QuickMessageForm,
+)
 from tanakinator.models import (
     UserStatus, Question, Answer,
     Solution, Feature, Progress,
@@ -192,9 +194,19 @@ def handle_confirming(user_status, message):
     if message == "はい":
         db.session.delete(pre_solution)
         db.session.commit()
-        reset_status(user_status)
-        save_status(user_status, GameState.PENDING)
+        new_solution = Solution()
+        new_solution.name = name
+        db.session.add(new_solution)
+        db.session.commit()
+        update_features(user_status.progress, new_solution)
         text = name + "ですね．\n覚えておきます．"
+        reply_content.append(TextMessageForm(text=text))
+        user_status.progress.candidates.insert(0, new_solution)
+        save_status(user_status, GameState.PENDING)
+        text = "よかったら下のリンクから\n" +  name + "について\nもっと教えてください\n\n" \
+             + f"https://tanakinator.herokuapp.com/solutions/{new_solution.id}/edit"
+        #  save_status(user_status, GameState.FEATURING)
+        reset_status(user_status)
         reply_content.append(TextMessageForm(text=text))
     elif message == "いいえ":
         db.session.delete(pre_solution)
@@ -212,7 +224,30 @@ def handle_training(user_status, message):
     pass
 
 def handle_featuring(user_status, message):
-    pass
+    reply_content = []
+    question = Question()
+    question.message = message
+    db.session.add(question)
+    db.session.commit()
+    # New
+    feature = Feature()
+    feature.solution_id = user_status.progress.candidates[0].id
+    feature.question_id = question.id
+    feature.value = 1.0
+    db.session.add(feature)
+    db.session.commit()
+    # Most likely
+    feature = Feature()
+    feature.solution_id = user_status.progress.candidates[1].id
+    feature.question_id = question.id
+    feature.value = -1.0
+    db.session.add(feature)
+    db.session.commit()
+
+    reset_status(user_status)
+    save_status(user_status, GameState.PENDING)
+    reply_content.append(TextMessageForm(text="ありがとうございました"))
+    return reply_content
 
 def handle_labeling(user_status, message):
     pass

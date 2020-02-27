@@ -32,7 +32,6 @@ def detect_unidentifiable_solutions():
         features_solution_table[features].add(s_id)
     return list(filter(lambda x: len(x) > 1, features_solution_table.values()))
 
-
 def select_next_question(progress):
     related_question_set = set()
     for s in progress.candidates:

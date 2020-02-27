@@ -2,7 +2,8 @@ from collections import defaultdict
 
 from flask import (
     render_template, request,
-    abort, redirect, url_for
+    abort, redirect, url_for,
+    flash
 )
 from tanakinator import app, handler, db
 from tanakinator.models import Solution, Question, Feature
@@ -20,7 +21,12 @@ str_value_table = {
 
 @app.route('/')
 def root():
-    print(detect_unidentifiable_solutions())
+    unidentifiable_solutions = detect_unidentifiable_solutions()
+    flash_message = ""
+    for s_ids in unidentifiable_solutions:
+        s_names = [Solution.query.get(s_id).name for s_id in s_ids]
+        flash_message = str(s_names) + " を差別化する特徴がありません．"
+        flash(flash_message)
     solutions = {s.id: s.name    for s in Solution.query.all()}
     questions = {q.id: q.message for q in Question.query.all()}
     features = Feature.query.all()

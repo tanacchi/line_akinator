@@ -30,8 +30,6 @@ def detect_unidentifiable_solutions():
     for s_id, features in feature_table.items():
         features = tuple(features.values())
         features_solution_table[features].add(s_id)
-    print("feature_table: ", feature_table)
-    print("features_solution_table: ", features_solution_table)
     return list(filter(lambda x: len(x) > 1, features_solution_table.values()))
 
 

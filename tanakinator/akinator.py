@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from statistics import mean
 
 from tanakinator.common import(
@@ -21,6 +21,16 @@ def get_user_status(user_id):
         db.session.add(user_status)
         db.session.commit()
     return user_status
+
+def detect_unidentifiable_solutions():
+    feature_table = {s.id: {q.id: 0.0 for q in Question.query.all()} for s in Solution.query.all()}
+    for f in Feature.query.all():
+        feature_table[f.solution_id][f.question_id] = f.value
+    features_solution_table = defaultdict(set)
+    for s_id, features in feature_table.items():
+        features = tuple(features.values())
+        features_solution_table[features].add(s_id)
+    return list(filter(lambda x: len(x) > 1, features_solution_table.values()))
 
 def select_next_question(progress):
     related_question_set = set()

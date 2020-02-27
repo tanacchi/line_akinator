@@ -2,10 +2,12 @@ from collections import defaultdict
 
 from flask import (
     render_template, request,
-    abort, redirect, url_for
+    abort, redirect, url_for,
+    flash
 )
 from tanakinator import app, handler, db
 from tanakinator.models import Solution, Question, Feature
+from tanakinator.akinator import detect_unidentifiable_solutions
 
 
 CIRCLE_CHAR = '&#9675;'
@@ -19,6 +21,11 @@ str_value_table = {
 
 @app.route('/')
 def root():
+    unidentifiable_solutions = detect_unidentifiable_solutions()
+    flash_messages = []
+    for s_ids in unidentifiable_solutions:
+        s_names = [Solution.query.get(s_id).name for s_id in s_ids]
+        flash_messages.append(str(s_names) + " を差別化する特徴がありません．")
     solutions = {s.id: s.name    for s in Solution.query.all()}
     questions = {q.id: q.message for q in Question.query.all()}
     features = Feature.query.all()
@@ -26,7 +33,8 @@ def root():
     for feature in features:
         s_id, q_id = feature.solution_id, feature.question_id
         table[s_id][q_id] = CIRCLE_CHAR if feature.value == 1.0 else CROSS_CHAR
-    return render_template('index.html', solutions=solutions, questions=questions, table=table)
+    kwargs = {'solutions': solutions, 'questions': questions, 'table': table, 'flash_messages': flash_messages}
+    return render_template('index.html', **kwargs)
 
 @app.route('/solutions/create', methods=['GET', 'POST'])
 def solution_create():

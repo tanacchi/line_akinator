@@ -42,6 +42,8 @@ akinator_handler_table = {
 def handle_message(event):
     message = event.message.text
     user_id = event.source.user_id
+    user_name = line.get_profile(user_id).display_name.encode('utf-8')
+    print(f"Received message: \"{message}\" from {user_name.decode('utf-8')}.")
 
     user_status = get_user_status(user_id)
     status = GameState(user_status.status)
